@@ -1,0 +1,59 @@
+---
+title: "Technical Note 01"
+author: "Roy Ratcliffe"
+abstract: >
+  R uses the Unix environment. What R-related environment variables do you need within an R container for normal functioning? What are their names and values? Some have more importance than others.
+output:
+  html_document:
+    df_print: paged
+  pdf_document: pinp::pinp
+one_column: true
+---
+
+```{r setup, include=FALSE}
+library(docknitr)
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+chunk.hook <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- chunk.hook(x, options)
+  font.size <- function(x) paste0("\\", x)
+  ifelse(
+    options$size != "normalsize",
+    paste(font.size(options$size), x, font.size("normalsize"), "", sep = "\n"), 
+    x
+  )
+})
+
+knitr::opts_chunk$set(
+  size = "scriptsize"
+)
+```
+
+## Introduction
+What environment variables should an R container set up in order to maximise compatibility? Normally there are many different variables although it is not entirely obvious why they exist at all. What would happen if the environment did _not_ include the variables? Presumably, R would break at some point.
+
+## R's environment variables
+What are they? They have the prefix `R_`. On Windows under RStudio, you find the following.
+```{r env-names}
+env.names <- names(Sys.getenv())
+env.names[grepl("^R_.+", env.names)]
+```
+Rocker images also inform. The listing below dumps the entire Unix environment as found by R version 4.1.2 inside its container.
+<!-- \onecolumn -->
+```{r sys-getenv, echo=FALSE, cache=TRUE, engine="docker", image="rocker/r-ver:4.1.2"}
+Sys.getenv()
+```
+<!-- \twocolumn -->
+Notice that `CRAN` does not begin with `R_` although most R-related variables do have that prefix.
+
+## Conclusions
+Take the R version number for example. This typically appears in the environment. Yet what would happen if the environment did not specify what version of R it contains? An image might indeed contain multiple different versions of R at the same time; hence an environment variable for one version makes little sense unless you assume only one version. R dependencies would fare better by asking an R installation's version number directly by running an R query at run-time on demand rather than assume that the Unix environment variable matches the installation.
+```bash
+R_VERSION=4.1.2
+```
+Some of the these variables may only serve as installation artefacts, left over from the installation process itself, and _not_ as prescriptions. Others may act as option and feature selectors affecting one or all R installations at run-time.

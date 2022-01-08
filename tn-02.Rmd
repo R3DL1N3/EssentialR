@@ -1,0 +1,38 @@
+---
+title: "Technical Note 02"
+author: "Roy Ratcliffe"
+abstract: |
+  What version of Bash does Linux normally equip? The short answer is version 5, typically.
+output:
+  pdf_document: pinp::pinp
+  html_document:
+    df_print: paged
+one_column: true
+---
+
+```{r setup, include=FALSE}
+library(docknitr)
+
+knitr::opts_chunk$set(
+  comment = NULL
+)
+```
+
+# Introduction
+This technical exploration _only_ considers two Linux distributions: Debian and Alpine. Debian subsumes Ubuntu; the latter adds a user-friendly graphical interface to the base Debian distribution for end-users, where the former primarily targets the server-side deployment.
+
+# Debian equips Bash version 5
+Version 5 for Debian version 11, short codename `bullseye`. No pre-installation required here because Debian sets up Bash as the default shell.
+```{r debian-11, cache=TRUE, engine="docker", image="debian:11"}
+echo $BASH_VERSION
+```
+
+# Alpine also version 5
+Alpine's default shell is BusyBox, a multi-call binary. Add Bash first before asking its version.
+```{r alpine-latest, cache=TRUE, engine="docker", image="alpine:latest"}
+apk add bash
+bash --version
+```
+
+# Further work
+The investigation initially ignores other less-ubiquitous distributions of Linux. CentOS and other flavours leave scope for furthur work.

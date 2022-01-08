@@ -1,0 +1,162 @@
+---
+title: "Technical Note 03"
+author: "Roy Ratcliffe"
+abstract: |
+  Bash version 4, and above, supports associative arrays but only for a single dimension; it does _not_ support associations between key and subordinate associative arrays. Key-value pairs are purely string-string. Here follows an adventure across the isoteric and ancient land of Bourne-Again shell.
+output:
+  html_document:
+    df_print: paged
+  pdf_document: pinp::pinp
+---
+
+```{r setup, include=FALSE}
+docknitr::docker_alias("bash", image = "debian:11")
+
+knitr::opts_chunk$set(
+  comment = NULL
+)
+```
+
+[man-7-bash]:https://man7.org/linux/man-pages/man1/bash.1.html
+
+# Associative arrays, experimental approach
+
+[Bash][man-7-bash] supports two types of array: `declare -a` for integer-indexed array or `declare -A` for string-indexed array.
+
+## Basic arrays
+The following Bash statements exemplify array assignment, dereference, pair count, key and value expansion.
+
+```{bash arr, cache=TRUE}
+declare -A arr
+arr[key]=val
+arr[1]=2
+arr+=([x]=y [a]=b)
+echo ${arr[key]}
+echo ${#arr[@]}
+echo ${!arr[@]}
+echo ${arr[@]}
+```
+
+Some things to note:
+
+* Order occurs non-deterministically.
+
+## Iterating pairs
+Bash makes iteration of associative arrays possible albeit somewhat idiosyncratic. The following snippet defines a Bash function called `pairs`. The first argument names an association. The function assigns a name reference using `local -n` in order to allow for subsequent usage by reference; Bash fails to parse the array name correctly without the local reference.
+
+```{bash pairs, cache=TRUE}
+pairs()
+{
+  local -n pairs_arg1=$1
+  for key in ${!pairs_arg1[@]}; do
+    $2 [$key]=${pairs_arg1[$key]}
+  done
+}
+declare -A arr=([key]=val [abc]=123 [x:y]=)
+echo $(pairs arr echo)
+```
+
+## Splat operation
+Bash does *not* allow iteration by value passing because the 'splat' operation fails to pass blanks. See demonstration below.
+
+```{bash splat, cache=TRUE}
+splat()
+{
+  local f=$1
+  shift
+  local a=($@)
+  let n=${#a[@]}/2
+  for ((i=0; i < n; i++)); do
+    $f ${a[i]}=${a[i + n]}
+  done
+}
+declare -A arr=([key]=val [abc]=123 [x:y]=)
+echo $(splat echo ${!arr[@]} ${arr[@]})
+```
+
+The following script simplifies and explains the problem.
+
+```{bash hash, cache=TRUE}
+hash()
+{
+  echo $#
+}
+hash
+hash ""
+hash "" ""
+arr=(a b "")
+hash ${arr[@]}
+```
+
+## Plain arrays
+Associative arrays do not play nicely.
+
+Instead, Bash can use a plain array of strings of the form `super:sub=val` or the form `super:sub` without a value.
+
+```{bash super-sub-val, cache=TRUE}
+f()
+{
+  local arg1=$1
+  shift
+  for arg in $@; do
+    local super=${arg%%:*}
+    local super_=${arg#*:}
+    local sub=${super_%%=*}
+    if [ $sub = $super_ ]; then
+      echo $super $sub
+    else
+      echo $super $sub ${super_#*=}
+    fi
+  done
+}
+f ^super$ super:sub1:sub1=val1:val2=x super:x
+```
+
+Think of `echo` as a 'co-routine yield' operation where its arguments become the space-delimited output from a function.
+
+## Refactoring splitter
+The function below splits only one term by colon and equals.
+
+```{bash super-sub-val-prime, cache=TRUE}
+f()
+{
+  local super=${1%%:*}
+  echo $super
+  if [ $super != $1 ]; then
+    local super_=${1#*:}
+    local sub=${super_%%=*}
+    echo $sub
+    [ $sub = $super_ ] || echo ${super_#*=}
+  fi
+}
+f super:sub1:sub1=val1:val2=x
+echo ---
+f super
+echo ---
+echo $(f super:sub)
+```
+
+# Shift, shift
+
+Passing by value and shifting offers an array-free alternative that replaces array handling with analogous argument vector shifts.
+
+```{bash long-opts, code=readLines("long-opts.sh")}
+```
+
+Take care with line endings. Bash requires line feeds only. Carriage returns trigger "syntax error near unexpected token" errors.
+
+## Split right
+The `splitRight` function splits strings by left and right with a colon delimiter. Everything after the last colon becomes the right term. The last colon acts as the only delimiter. Everything to its left, including any preceding colons, becomes the left-hand term.
+
+## Match right
+Filters the argument vector using the first argument as a match pattern. Remaining arguments iterate as pairs, left-hand first and right-hand second for each pair. Matching applies to the right-hand argument only. The results output both left and right on successful regular-expression match.
+
+## Left of
+Output left-hand argument in each pair.
+
+## Long options
+Translates left-right pairs to `--`right`-`left forms suitable for passing as long options.
+
+# Conclusions
+
+Bash does not make life easy. Its authors have made a light-weight scripting language and not a fully-fledged programming language. Efforts to implement a map of maps should not expect to prove straightforward.
