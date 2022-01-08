@@ -59,4 +59,6 @@ RUN echo 'source(file.path(Sys.getenv("HOME"), ".vscode-R", "init.R"))' >> ${R_H
 #     && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
 
+# The generated docker-init.sh script sets up user-level access to Docker and
+# then executes its arguments.
 ENTRYPOINT [ "/usr/local/share/docker-init.sh", "/init" ]
