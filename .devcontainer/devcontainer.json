@@ -8,6 +8,12 @@
 		"args": { "VARIANT": "4" }
 	},
 
+	// Rocker's ml-verse image run S6 to launch and supervise RStudio server.
+	// S6's s6-svscan becomes the PID-1 process.
+    "overrideCommand": false,
+	"runArgs": ["--init"],
+	"mounts": [ "source=/var/run/docker.sock,target=/var/run/docker-host.sock,type=bind" ],
+
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"r.rterm.linux": "/opt/venv/reticulate/bin/radian",
@@ -21,15 +27,12 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"ikuyadeu.r",
-		"rdebugger.r-debugger"
+		"rdebugger.r-debugger",
+		"ms-azuretools.vscode-docker"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [8787],
-
-	// Rocker's ml-verse image run S6 to launch and supervise RStudio server.
-	// S6's s6-svscan becomes the PID-1 process.
-	"overrideCommand": false,
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": "R --version",
