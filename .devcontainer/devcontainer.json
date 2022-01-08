@@ -1,0 +1,39 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.210.0/containers/r
+{
+	"name": "R (Community)",
+	"build": {
+		"dockerfile": "Dockerfile",
+		// Update VARIANT to pick a specific R version: 4, 4.1, 4.0
+		"args": { "VARIANT": "4" }
+	},
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": {
+		"r.rterm.linux": "/opt/venv/reticulate/bin/radian",
+		"r.bracketedPaste": true,
+		"r.plot.useHttpgd": true,
+		"[r]": {
+			"editor.wordSeparators": "`~!@#%$^&*()-=+[{]}\\|;:'\",<>/?"
+		}
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"ikuyadeu.r",
+		"rdebugger.r-debugger"
+	],
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [8787],
+
+	// Rocker's ml-verse image run S6 to launch and supervise RStudio server.
+	// S6's s6-svscan becomes the PID-1 process.
+	"overrideCommand": false,
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postCreateCommand": "R --version",
+
+	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "rstudio"
+}
